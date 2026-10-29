@@ -8,13 +8,15 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "db:schema": "psql $DATABASE_URL -f db/schema.sql",
-    "contract:emit": "prisma contract emit"
+    "contract:emit": "prisma contract emit",
+    "postinstall": "prisma skills sync || exit 0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^7.10.1",
+    "@prisma/orm-extension-supabase": "8.0.0-rc.21",
     "@prisma/orm-postgres": "^8.0.0-rc.21",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.2",
@@ -23,6 +25,7 @@
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
+    "jose": "^6.2.14",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.12.1",
     "pg": "^8.23.1",
@@ -32,6 +35,7 @@
     "@prisma/cli-engine": "^0.9.0",
     "@types/node": "^26.6.5",
     "nodemon": "^3.1.14",
-    "prisma": "^8.0.0-rc.28"
+    "prisma": "^8.0.0-rc.28",
+    "typescript": "^5.9.3"
   }
 }

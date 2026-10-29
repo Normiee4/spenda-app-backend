@@ -1,32 +1,22 @@
-const { Router } = require('express');
-const { z } = require('zod');
+import { Router } from 'express';
+import { z } from 'zod';
 
-const AuthController = require('./controller');
-const validate = require('../../middlewares/validate');
-const { authenticate } = require('../../middlewares/auth');
-const { authLimiter } = require('../../middlewares/rateLimiter').default;
+import * as AuthController from './controller.js';
+import validate from '../../middlewares/validate.js';
+import { authenticate } from '../../middlewares/auth.js';
 
 const router = Router();
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().trim().min(2).max(80),
-});
+const updateMeSchema = z
+  .object({
+    username: z.string().trim().min(3).max(30).optional(),
+    name: z.string().trim().min(1).max(80).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Provide at least one field to update',
+  });
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
-});
-
-router.post('/register', authLimiter, validate(registerSchema), AuthController.register);
-router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
 router.get('/me', authenticate, AuthController.me);
-router.patch('/password', authenticate, validate(changePasswordSchema), AuthController.changePassword);
+router.patch('/me', authenticate, validate(updateMeSchema), AuthController.updateMe);
 
-module.exports = router;
+export default router;

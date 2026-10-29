@@ -1,8 +1,9 @@
 import { createServer } from 'http';
-import app from './app';
-import { port, nodeEnv } from './config/env';
-import { closePool } from './config/db';
-import { info, error } from './utils/logger';
+
+import app from './app.js';
+import { port, nodeEnv } from './config/env.js';
+import { closePool } from './config/db.js';
+import { info, error } from './utils/logger.js';
 
 const server = createServer(app);
 

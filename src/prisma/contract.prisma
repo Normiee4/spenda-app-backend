@@ -1,21 +1,82 @@
 // use prisma-8
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+enum DURATION {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+model User {
+  id        Uuid @id
+  auth_user supabase:auth.AuthUser @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  email    String  @unique
+  username String? @unique
+  name     String?  // ? in datatype means optional (nullable)
+
+  created_at TimestamptzString @default(now())
+  updated_at TimestamptzString @default(now()) @onUpdate(now())
+
+  @@rls
+  @@map("user")
+}
+
+model Profile {
+  id      Int  @id @default(autoincrement())
+  user_id Uuid @unique
+  user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  display_name        String?
+  avatar_url          String?
+  is_darkmode         Boolean @default(false)
+  allow_notifications Boolean @default(true)
+
+  created_at TimestamptzString @default(now())
+  updated_at TimestamptzString @default(now()) @onUpdate(now())
+
+  @@rls
+  @@map("profile")
+}
+
+model ExpenseLog {
+  id       Int    @id @default(autoincrement())
+  
+  raw_input String
+  amount Decimal 
+  note String
+
+  user_id Uuid
+  user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  category_id Int?
+  category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+
+  created_at TimestamptzString @default(now()) 
+
+  @@index([user_id])    // @@index is built inside prisma as an indexing command or CREATE INDEX in SQL
+  @@index([user_id, created_at])
+  @@index([category_id])
+  @@rls
+  @@map("expense_log") // @@map is built inside prisma that works like  "AS" in SQL when making nickanmes for fields or attributes
+}
+
+model ExpenseHistory {
+  id     Int  @id @default(autoincrement())
+  log_id Int
+  log    ExpenseLog @relation(fields: [log_id], references: [id], onDelete: Cascade)
+
+  duration   DURATION @default(DAILY)
+  created_at TimestamptzString @default(now())
+
+  @@index([log_id])
+  @@rls
+  @@map("expense_history")
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@rls
+  @@map("category")
 }

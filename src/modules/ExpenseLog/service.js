@@ -1,44 +1,39 @@
-const ApiError = require('../../utils/ApiError');
-const ExpenseLogModel = require('./model');
-const ExpenseHistoryModel = require('../ExpenseHistory/model');
+import ApiError from '../../utils/ApiError.js';
+import * as ExpenseLogModel from './model.js';
 
-async function recordHistory(expense, userId, action) {
-  await ExpenseHistoryModel.create({
-    expenseId: expense.id,
-    userId,
-    action,
-    snapshot: expense,
-  });
+function toTimestampRange(filters) {
+  return {
+    ...filters,
+    from: filters.from ? `${filters.from}T00:00:00.000Z` : undefined,
+    to: filters.to ? `${filters.to}T23:59:59.999Z` : undefined,
+  };
 }
 
-async function create(userId, payload) {
-  const expense = await ExpenseLogModel.create(userId, payload);
-  await recordHistory(expense, userId, 'created');
-  return expense;
+export async function create(userId, payload) {
+  return ExpenseLogModel.create(userId, payload);
 }
 
-async function list(userId, filters) {
-  return ExpenseLogModel.findAllByUser(userId, filters);
+export async function list(userId, filters) {
+  return ExpenseLogModel.findAllByUser(userId, toTimestampRange(filters));
 }
 
-async function getById(userId, id) {
+export async function getById(userId, id) {
   const expense = await ExpenseLogModel.findByIdForUser(id, userId);
   if (!expense) throw ApiError.notFound('Expense not found');
   return expense;
 }
 
-async function update(userId, id, payload) {
-  const existing = await getById(userId, id);
+export async function update(userId, id, payload) {
+  await getById(userId, id);
   const updated = await ExpenseLogModel.update(id, userId, payload);
-  await recordHistory({ ...updated, previous: existing }, userId, 'updated');
+  if (!updated) throw ApiError.notFound('Expense not found');
   return updated;
 }
 
-async function remove(userId, id) {
+export async function remove(userId, id) {
   const existing = await getById(userId, id);
-  const deleted = await ExpenseLogModel.remove(id, userId);
-  await recordHistory(deleted, userId, 'deleted');
+  await ExpenseLogModel.remove(id, userId);
   return existing;
 }
 
-module.exports = { create, list, getById, update, remove };
+export default { create, list, getById, update, remove };

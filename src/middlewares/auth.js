@@ -1,8 +1,22 @@
-const jwt = require('jsonwebtoken');
-const env = require('../config/env');
-const ApiError = require('../utils/ApiError');
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-function authenticate(req, res, next) {
+import { supabaseJwksUrl, supabaseUrl } from '../config/env.js';
+import ApiError from '../utils/ApiError.js';
+import { ensureUserFromClaims } from '../modules/Auth/model.js';
+
+let jwks;
+
+function getJwks() {
+  if (!supabaseJwksUrl) {
+    throw new Error('SUPABASE_URL or SUPABASE_JWKS_URL is not configured');
+  }
+  if (!jwks) {
+    jwks = createRemoteJWKSet(new URL(supabaseJwksUrl));
+  }
+  return jwks;
+}
+
+export async function authenticate(req, res, next) {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
 
@@ -11,22 +25,26 @@ function authenticate(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, env.jwtSecret);
-    req.user = { id: payload.sub, email: payload.email, role: payload.role || 'user' };
+    const issuer = supabaseUrl ? `${supabaseUrl}/auth/v1` : undefined;
+    const { payload } = await jwtVerify(token, getJwks(), issuer ? { issuer } : {});
+
+    if (!payload.sub) {
+      return next(ApiError.unauthorized('Token is missing a subject'));
+    }
+
+    req.user = {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    };
+    req.token = token;
+
+    await ensureUserFromClaims(payload);
+
     return next();
   } catch (err) {
     return next(ApiError.unauthorized('Invalid or expired token'));
   }
 }
 
-function authorize(...roles) {
-  return (req, res, next) => {
-    if (!req.user) return next(ApiError.unauthorized());
-    if (roles.length > 0 && !roles.includes(req.user.role)) {
-      return next(ApiError.forbidden('Insufficient permissions'));
-    }
-    return next();
-  };
-}
-
-module.exports = { authenticate, authorize };
+export default { authenticate };

@@ -1,93 +1,83 @@
-const db = require('../../config/db').default;
+import { and, or } from '@prisma/orm-postgres/orm-client';
 
-async function create(userId, data) {
-  const { rows } = await db.query(
-    `INSERT INTO expenses (user_id, title, amount, category, notes, expense_date)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
-    [userId, data.title, data.amount, data.category, data.notes ?? null, data.expenseDate]
-  );
-  return rows[0];
+import { db } from '../../config/db.js';
+
+function buildWhere(userId, filters) {
+  return (expense) => {
+    const parts = [expense.user_id.eq(userId)];
+
+    if (filters.categoryId !== undefined && filters.categoryId !== null) {
+      parts.push(expense.category_id.eq(filters.categoryId));
+    }
+
+    if (filters.from) {
+      parts.push(expense.created_at.gte(filters.from));
+    }
+
+    if (filters.to) {
+      parts.push(expense.created_at.lte(filters.to));
+    }
+
+    if (filters.search) {
+      const pattern = `%${filters.search}%`;
+      parts.push(or(expense.raw_input.ilike(pattern), expense.note.ilike(pattern)));
+    }
+
+    return and(...parts);
+  };
 }
 
-async function findByIdForUser(id, userId) {
-  const { rows } = await db.query('SELECT * FROM expenses WHERE id = $1 AND user_id = $2 LIMIT 1', [id, userId]);
-  return rows[0] || null;
+export async function create(userId, data) {
+  return db.orm.public.ExpenseLog.create({
+    raw_input: data.rawInput,
+    amount: data.amount,
+    note: data.note ?? '',
+    user_id: userId,
+    category_id: data.categoryId ?? null,
+  });
 }
 
-async function findAllByUser(userId, filters = {}) {
-  const conditions = ['user_id = $1'];
-  const params = [userId];
+export async function findByIdForUser(id, userId) {
+  return db.orm.public.ExpenseLog.where((expense) =>
+    and(expense.id.eq(id), expense.user_id.eq(userId)),
+  ).first();
+}
 
-  if (filters.category) {
-    params.push(filters.category);
-    conditions.push(`category = $${params.length}`);
-  }
-  if (filters.from) {
-    params.push(filters.from);
-    conditions.push(`expense_date >= $${params.length}`);
-  }
-  if (filters.to) {
-    params.push(filters.to);
-    conditions.push(`expense_date <= $${params.length}`);
-  }
-  if (filters.search) {
-    params.push(`%${filters.search}%`);
-    conditions.push(`(title ILIKE $${params.length} OR notes ILIKE $${params.length})`);
-  }
-
+export async function findAllByUser(userId, filters = {}) {
+  const where = buildWhere(userId, filters);
   const limit = filters.limit ?? 20;
   const offset = filters.offset ?? 0;
-  params.push(limit, offset);
 
-  const { rows } = await db.query(
-    `SELECT *, COUNT(*) OVER() AS total_count
-     FROM expenses
-     WHERE ${conditions.join(' AND ')}
-     ORDER BY expense_date DESC, created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
+  const items = await db.orm.public.ExpenseLog.where(where)
+    .orderBy((expense) => expense.created_at.desc())
+    .limit(limit)
+    .offset(offset)
+    .all();
 
-  const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
-  const items = rows.map(({ total_count, ...row }) => row);
+  const { total } = await db.orm.public.ExpenseLog.where(where).aggregate((aggregate) => ({
+    total: aggregate.count(),
+  }));
 
   return { items, total, limit, offset };
 }
 
-async function update(id, userId, data) {
-  const fields = [];
-  const params = [id, userId];
+export async function update(id, userId, data) {
+  const patch = {};
 
-  const columnMap = {
-    title: 'title',
-    amount: 'amount',
-    category: 'category',
-    notes: 'notes',
-    expenseDate: 'expense_date',
-  };
+  if (data.rawInput !== undefined) patch.raw_input = data.rawInput;
+  if (data.amount !== undefined) patch.amount = data.amount;
+  if (data.note !== undefined) patch.note = data.note;
+  if (data.categoryId !== undefined) patch.category_id = data.categoryId;
 
-  for (const [key, column] of Object.entries(columnMap)) {
-    if (data[key] !== undefined) {
-      params.push(data[key]);
-      fields.push(`${column} = $${params.length}`);
-    }
-  }
-
-  if (fields.length === 0) return findByIdForUser(id, userId);
-
-  const { rows } = await db.query(
-    `UPDATE expenses SET ${fields.join(', ')}, updated_at = now()
-     WHERE id = $1 AND user_id = $2
-     RETURNING *`,
-    params
-  );
-  return rows[0] || null;
+  return db.orm.public.ExpenseLog.where((expense) =>
+    and(expense.id.eq(id), expense.user_id.eq(userId)),
+  ).update(patch);
 }
 
-async function remove(id, userId) {
-  const { rows } = await db.query('DELETE FROM expenses WHERE id = $1 AND user_id = $2 RETURNING *', [id, userId]);
-  return rows[0] || null;
+export async function remove(id, userId) {
+  return db.orm.public.ExpenseLog.where((expense) =>
+    and(expense.id.eq(id), expense.user_id.eq(userId)),
+  ).delete();
 }
 
-module.exports = { create, findByIdForUser, findAllByUser, update, remove };
+export default { create, findByIdForUser, findAllByUser, update, remove };

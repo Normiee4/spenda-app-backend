@@ -1,9 +1,10 @@
 import { Router } from 'express';
 
-import authRoutes from './modules/Auth/route';
-import expenseLogRoutes from './modules/ExpenseLog/route';
-import expenseHistoryRoutes from './modules/ExpenseHistory/route';
-import profileSettingsRoutes from './modules/ProfileSettings/route';
+import authRoutes from './modules/Auth/route.js';
+import expenseLogRoutes from './modules/ExpenseLog/route.js';
+import expenseHistoryRoutes from './modules/ExpenseHistory/route.js';
+import categoryRoutes from './modules/Category/route.js';
+import profileRoutes from './modules/Profile/route.js';
 
 const router = Router();
 
@@ -15,7 +16,8 @@ router.get('/', (req, res) => {
       auth: '/api/auth',
       expenseLogs: '/api/expenses',
       expenseHistory: '/api/expenses/history',
-      profileSettings: '/api/profile',
+      categories: '/api/categories',
+      profile: '/api/profile',
     },
   });
 });
@@ -23,6 +25,7 @@ router.get('/', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/expenses/history', expenseHistoryRoutes);
 router.use('/expenses', expenseLogRoutes);
-router.use('/profile', profileSettingsRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/profile', profileRoutes);
 
 export default router;

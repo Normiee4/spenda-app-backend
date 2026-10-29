@@ -1,45 +1,41 @@
-const db = require('../../config/db').default;
+import { and } from '@prisma/orm-postgres/orm-client';
 
-async function create({ expenseId, userId, action, snapshot }) {
-  const { rows } = await db.query(
-    `INSERT INTO expense_history (expense_id, user_id, action, snapshot)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *`,
-    [expenseId, userId, action, snapshot]
-  );
-  return rows[0];
+import { db } from '../../config/db.js';
+
+export async function findLogForUser(logId, userId) {
+  return db.orm.public.ExpenseLog.where((expense) =>
+    and(expense.id.eq(logId), expense.user_id.eq(userId)),
+  ).first();
 }
 
-async function findAllByUser(userId, filters = {}) {
-  const conditions = ['user_id = $1'];
-  const params = [userId];
+export async function create(logId, duration) {
+  return db.orm.public.ExpenseHistory.create({
+    log_id: logId,
+    duration,
+  });
+}
 
-  if (filters.expenseId) {
-    params.push(filters.expenseId);
-    conditions.push(`expense_id = $${params.length}`);
-  }
-  if (filters.action) {
-    params.push(filters.action);
-    conditions.push(`action = $${params.length}`);
+export async function findAllByLog(logId, filters = {}) {
+  let collection = db.orm.public.ExpenseHistory.where({ log_id: logId });
+
+  if (filters.duration) {
+    collection = collection.where({ duration: filters.duration });
   }
 
   const limit = filters.limit ?? 20;
   const offset = filters.offset ?? 0;
-  params.push(limit, offset);
 
-  const { rows } = await db.query(
-    `SELECT *, COUNT(*) OVER() AS total_count
-     FROM expense_history
-     WHERE ${conditions.join(' AND ')}
-     ORDER BY created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
+  const items = await collection
+    .orderBy((history) => history.created_at.desc())
+    .limit(limit)
+    .offset(offset)
+    .all();
 
-  const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
-  const items = rows.map(({ total_count, ...row }) => row);
+  const { total } = await collection.aggregate((aggregate) => ({
+    total: aggregate.count(),
+  }));
 
   return { items, total, limit, offset };
 }
 
-module.exports = { create, findAllByUser };
+export default { findLogForUser, create, findAllByLog };

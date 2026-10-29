@@ -1,40 +1,32 @@
-const db = require('../../config/db').default;
+import { db } from '../../config/db.js';
 
-const PUBLIC_FIELDS = 'id, email, name, role, created_at, updated_at';
-
-async function create({ email, passwordHash, name }) {
-  const { rows } = await db.query(
-    `INSERT INTO users (email, password_hash, name)
-     VALUES ($1, $2, $3)
-     RETURNING ${PUBLIC_FIELDS}`,
-    [email.toLowerCase(), passwordHash, name]
-  );
-  return rows[0];
+export async function findById(id) {
+  return db.orm.public.User.where({ id }).first();
 }
 
-async function findByEmail(email) {
-  const { rows } = await db.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email.toLowerCase()]);
-  return rows[0] || null;
+export async function findByUsername(username) {
+  return db.orm.public.User.where({ username }).first();
 }
 
-async function findById(id) {
-  const { rows } = await db.query(`SELECT ${PUBLIC_FIELDS} FROM users WHERE id = $1 LIMIT 1`, [id]);
-  return rows[0] || null;
+export async function updateById(id, data) {
+  return db.orm.public.User.where({ id }).update(data);
 }
 
-async function findByIdWithPassword(id) {
-  const { rows } = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [id]);
-  return rows[0] || null;
-}
+export async function ensureUserFromClaims(claims) {
+  const id = claims?.sub;
+  const email = claims?.email;
 
-async function updatePassword(id, passwordHash) {
-  const { rows } = await db.query(
-    `UPDATE users SET password_hash = $2, updated_at = now()
-     WHERE id = $1
-     RETURNING ${PUBLIC_FIELDS}`,
-    [id, passwordHash]
-  );
-  return rows[0] || null;
-}
+  if (!id || !email) return null;
 
-module.exports = { create, findByEmail, findById, findByIdWithPassword, updatePassword };
+  const meta = claims.user_metadata || {};
+  const name = meta.full_name || meta.name || meta.display_name || null;
+  const username = meta.username || meta.preferred_username || null;
+
+  return db.orm.public.User.upsert({
+    create: { id, email, name, username },
+    update: {
+      email,
+      ...(name ? { name } : {}),
+    },
+  });
+}

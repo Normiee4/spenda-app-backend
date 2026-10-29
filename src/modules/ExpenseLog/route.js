@@ -1,26 +1,34 @@
-const { Router } = require('express');
-const { z } = require('zod');
+import { Router } from 'express';
+import { z } from 'zod';
 
-const ExpenseLogController = require('./controller');
-const validate = require('../../middlewares/validate');
-const { authenticate } = require('../../middlewares/auth');
+import * as ExpenseLogController from './controller.js';
+import validate from '../../middlewares/validate.js';
+import { authenticate } from '../../middlewares/auth.js';
 
 const router = Router();
 
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
+const amount = z
+  .union([z.string(), z.number()])
+  .transform((value) => String(value).trim())
+  .refine((value) => /^\d+(\.\d{1,2})?$/.test(value), {
+    message: 'Amount must be a positive number with up to 2 decimal places',
+  });
+
+const categoryId = z.union([z.coerce.number().int().positive(), z.null()]).optional();
+
 const createSchema = z.object({
-  title: z.string().trim().min(1).max(120),
-  amount: z.coerce.number().positive('Amount must be greater than 0'),
-  category: z.string().trim().min(1).max(60),
-  notes: z.string().trim().max(1000).optional().nullable(),
-  expenseDate: dateString,
+  rawInput: z.string().trim().min(1).max(2000),
+  amount,
+  note: z.string().trim().max(1000).optional().default(''),
+  categoryId,
 });
 
 const updateSchema = createSchema.partial();
 
 const listQuerySchema = z.object({
-  category: z.string().trim().max(60).optional(),
+  categoryId: z.coerce.number().int().positive().optional(),
   from: dateString.optional(),
   to: dateString.optional(),
   search: z.string().trim().max(120).optional(),
@@ -29,7 +37,7 @@ const listQuerySchema = z.object({
 });
 
 const idParamSchema = z.object({
-  id: z.string().uuid('Invalid expense id'),
+  id: z.coerce.number().int().positive('Invalid expense id'),
 });
 
 router.use(authenticate);
@@ -40,4 +48,4 @@ router.get('/:id', validate(idParamSchema, 'params'), ExpenseLogController.getBy
 router.patch('/:id', validate(idParamSchema, 'params'), validate(updateSchema), ExpenseLogController.update);
 router.delete('/:id', validate(idParamSchema, 'params'), ExpenseLogController.remove);
 
-module.exports = router;
+export default router;

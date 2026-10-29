@@ -1,9 +1,18 @@
-const asyncHandler = require('../../utils/asyncHandler');
-const ExpenseHistoryService = require('./service');
+import asyncHandler from '../../utils/asyncHandler.js';
+import * as ExpenseHistoryService from './service.js';
 
-const list = asyncHandler(async (req, res) => {
-  const { items, ...meta } = await ExpenseHistoryService.list(req.user.id, req.query);
+export const create = asyncHandler(async (req, res) => {
+  const history = await ExpenseHistoryService.create(req.user.id, req.body);
+  res.status(201).json({ success: true, data: history });
+});
+
+export const list = asyncHandler(async (req, res) => {
+  const { items, ...meta } = await ExpenseHistoryService.list(
+    req.user.id,
+    req.query.logId,
+    req.query,
+  );
   res.status(200).json({ success: true, data: items, meta });
 });
 
-module.exports = { list };
+export default { create, list };

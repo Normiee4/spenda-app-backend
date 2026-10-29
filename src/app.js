@@ -4,12 +4,12 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 
-import { corsOrigin, nodeEnv } from './config/env';
-import { healthCheck } from './config/db';
-import routes from './routes';
-import { apiLimiter } from './middlewares/rateLimiter';
-import notFound from './middlewares/notFound';
-import errorHandler from './middlewares/errorHandler';
+import { corsOrigin, nodeEnv } from './config/env.js';
+import { healthCheck } from './config/db.js';
+import routes from './index.js';
+import { apiLimiter } from './middlewares/rateLimiter.js';
+import notFound from './middlewares/notFound.js';
+import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
 
@@ -18,9 +18,9 @@ app.disable('x-powered-by');
 app.use(helmet());
 app.use(
   cors({
-    origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((o) => o.trim()),
+    origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((origin) => origin.trim()),
     credentials: true,
-  })
+  }),
 );
 app.use(compression());
 app.use(json({ limit: '1mb' }));

@@ -1,5 +1,5 @@
-const env = require('../config/env');
-const logger = require('../utils/logger');
+import { nodeEnv } from '../config/env.js';
+import * as logger from '../utils/logger.js';
 
 function errorHandler(err, req, res, next) {
   if (res.headersSent) return next(err);
@@ -15,8 +15,8 @@ function errorHandler(err, req, res, next) {
     success: false,
     message: isOperational ? err.message : 'Internal server error',
     ...(err.details ? { details: err.details } : {}),
-    ...(env.nodeEnv === 'development' && !isOperational ? { stack: err.stack } : {}),
+    ...(nodeEnv === 'development' && !isOperational ? { stack: err.stack } : {}),
   });
 }
 
-module.exports = errorHandler;
+export default errorHandler;

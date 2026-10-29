@@ -1,22 +1,38 @@
-const path = require('path');
-const dotenv = require('dotenv');
+import path from 'node:path';
+import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const required = ['JWT_SECRET'];
+export const nodeEnv = process.env.NODE_ENV || 'development';
+export const port = Number(process.env.PORT) || 4000;
+export const logLevel = process.env.LOG_LEVEL || 'info';
 
-const missing = required.filter((key) => !process.env[key]);
-if (missing.length > 0 && process.env.NODE_ENV === 'production') {
-  throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+const supabaseBaseUrl = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+
+export const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
+export const supabaseUrl = supabaseBaseUrl;
+export const supabaseJwksUrl =
+  process.env.SUPABASE_JWKS_URL ||
+  (supabaseBaseUrl ? `${supabaseBaseUrl}/auth/v1/.well-known/jwks.json` : '');
+export const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || '';
+export const corsOrigin = process.env.CORS_ORIGIN || '*';
+
+const required = ['DIRECT_URL'];
+
+if (nodeEnv === 'production') {
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
 }
 
-module.exports = {
-  nodeEnv: process.env.NODE_ENV || 'development',
-  port: Number(process.env.PORT) || 4000,
-  jwtSecret: process.env.JWT_SECRET || 'dev-only-insecure-secret',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  databaseUrl: process.env.DATABASE_URL || '',
-  supabaseUrl: process.env.SUPABASE_URL || '',
-  supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY || '',
-  corsOrigin: process.env.CORS_ORIGIN || '*',
+export default {
+  nodeEnv,
+  port,
+  logLevel,
+  databaseUrl,
+  supabaseUrl,
+  supabaseJwksUrl,
+  supabaseServiceKey,
+  corsOrigin,
 };
