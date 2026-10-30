@@ -163,7 +163,7 @@
                 }
               },
               "category_id": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
@@ -208,7 +208,7 @@
             "relations": {
               "category": {
                 "cardinality": "N:1",
-                "nullable": true,
+                "nullable": false,
                 "on": {
                   "localFields": [
                     "category_id"
@@ -472,6 +472,260 @@
     "namespaces": {
       "public": {
         "entries": {
+          "policy": {
+            "category_read_all": {
+              "kind": "policy",
+              "name": "category_read_all_aede9d92",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "category_read_all",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "category",
+              "using": "true"
+            },
+            "expense_history_owner_create": {
+              "kind": "policy",
+              "name": "expense_history_owner_create_388e4c95",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "expense_history_owner_create",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_history",
+              "withCheck": "exists (select 1 from public.expense_log l where l.id = \"expense_history\".\"log_id\" and l.user_id = auth.uid())"
+            },
+            "expense_history_owner_delete": {
+              "kind": "policy",
+              "name": "expense_history_owner_delete_fe003904",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "expense_history_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_history",
+              "using": "exists (select 1 from public.expense_log l where l.id = \"expense_history\".\"log_id\" and l.user_id = auth.uid())"
+            },
+            "expense_history_owner_read": {
+              "kind": "policy",
+              "name": "expense_history_owner_read_18af2e3d",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "expense_history_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_history",
+              "using": "exists (select 1 from public.expense_log l where l.id = \"expense_history\".\"log_id\" and l.user_id = auth.uid())"
+            },
+            "expense_history_owner_update": {
+              "kind": "policy",
+              "name": "expense_history_owner_update_631f69b6",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "expense_history_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_history",
+              "using": "exists (select 1 from public.expense_log l where l.id = \"expense_history\".\"log_id\" and l.user_id = auth.uid())",
+              "withCheck": "exists (select 1 from public.expense_log l where l.id = \"expense_history\".\"log_id\" and l.user_id = auth.uid())"
+            },
+            "expense_log_owner_create": {
+              "kind": "policy",
+              "name": "expense_log_owner_create_a29795f4",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "expense_log_owner_create",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_log",
+              "withCheck": "\"user_id\"::uuid = auth.uid()"
+            },
+            "expense_log_owner_delete": {
+              "kind": "policy",
+              "name": "expense_log_owner_delete_07b8e963",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "expense_log_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_log",
+              "using": "\"user_id\"::uuid = auth.uid()"
+            },
+            "expense_log_owner_read": {
+              "kind": "policy",
+              "name": "expense_log_owner_read_f6830410",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "expense_log_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_log",
+              "using": "\"user_id\"::uuid = auth.uid()"
+            },
+            "expense_log_owner_update": {
+              "kind": "policy",
+              "name": "expense_log_owner_update_2078ff49",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "expense_log_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "expense_log",
+              "using": "\"user_id\"::uuid = auth.uid()",
+              "withCheck": "\"user_id\"::uuid = auth.uid()"
+            },
+            "profile_owner_create": {
+              "kind": "policy",
+              "name": "profile_owner_create_a29795f4",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "profile_owner_create",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile",
+              "withCheck": "\"user_id\"::uuid = auth.uid()"
+            },
+            "profile_owner_delete": {
+              "kind": "policy",
+              "name": "profile_owner_delete_07b8e963",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "profile_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile",
+              "using": "\"user_id\"::uuid = auth.uid()"
+            },
+            "profile_owner_read": {
+              "kind": "policy",
+              "name": "profile_owner_read_f6830410",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "profile_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile",
+              "using": "\"user_id\"::uuid = auth.uid()"
+            },
+            "profile_owner_update": {
+              "kind": "policy",
+              "name": "profile_owner_update_2078ff49",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "profile_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "profile",
+              "using": "\"user_id\"::uuid = auth.uid()",
+              "withCheck": "\"user_id\"::uuid = auth.uid()"
+            },
+            "user_owner_create": {
+              "kind": "policy",
+              "name": "user_owner_create_a3a269e1",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "user_owner_create",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "user",
+              "withCheck": "\"id\"::uuid = auth.uid()"
+            },
+            "user_owner_delete": {
+              "kind": "policy",
+              "name": "user_owner_delete_a774a79e",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "user_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "user",
+              "using": "\"id\"::uuid = auth.uid()"
+            },
+            "user_owner_read": {
+              "kind": "policy",
+              "name": "user_owner_read_80625919",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "user_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "user",
+              "using": "\"id\"::uuid = auth.uid()"
+            },
+            "user_owner_update": {
+              "kind": "policy",
+              "name": "user_owner_update_3f09257c",
+              "namespaceId": "public",
+              "operation": "update",
+              "permissive": true,
+              "prefix": "user_owner_update",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "user",
+              "using": "\"id\"::uuid = auth.uid()",
+              "withCheck": "\"id\"::uuid = auth.uid()"
+            }
+          },
+          "rls": {
+            "category": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "category"
+            },
+            "expense_history": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "expense_history"
+            },
+            "expense_log": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "expense_log"
+            },
+            "profile": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "profile"
+            },
+            "user": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "user"
+            }
+          },
           "table": {
             "category": {
               "columns": {
@@ -556,7 +810,9 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "expense_history_log_id_idx_3df9b500"
+                    "unique": [
+                      "log_id"
+                    ]
                   },
                   "onDelete": "cascade",
                   "source": {
@@ -575,22 +831,19 @@
                   }
                 }
               ],
-              "indexes": [
-                {
-                  "columns": [
-                    "log_id"
-                  ],
-                  "name": "expense_history_log_id_idx_3df9b500",
-                  "prefix": "expense_history_log_id_idx",
-                  "unique": false
-                }
-              ],
+              "indexes": [],
               "primaryKey": {
                 "columns": [
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "log_id"
+                  ]
+                }
+              ]
             },
             "expense_log": {
               "columns": {
@@ -602,7 +855,7 @@
                 "category_id": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
-                  "nullable": true
+                  "nullable": false
                 },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -663,7 +916,7 @@
                   "index": {
                     "name": "expense_log_category_id_idx_da7213d4"
                   },
-                  "onDelete": "setNull",
+                  "onDelete": "restrict",
                   "source": {
                     "columns": [
                       "category_id"
@@ -914,7 +1167,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8b566a247d85a427736bf3546193fffb771463094e9d09bf5ed5c20bff5bb282"
+    "storageHash": "556c6aad3bad930bf8b908e5a933f0d83ec36a8abe0eb871d93b185f4493f154"
   },
   "execution": {
     "executionHash": "9f46e78d39ad1749413586c162f08e6881960841bb59ee91b21b94a41fdc943e",

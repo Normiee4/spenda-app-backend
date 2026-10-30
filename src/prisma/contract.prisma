@@ -18,6 +18,7 @@ model User {
   updated_at TimestamptzString @default(now()) @onUpdate(now())
 
   @@map("user")
+  @@rls
 }
 
 model Profile {
@@ -34,6 +35,7 @@ model Profile {
   updated_at TimestamptzString @default(now()) @onUpdate(now())
 
   @@map("profile")
+  @@rls
 }
 
 model ExpenseLog {
@@ -46,8 +48,8 @@ model ExpenseLog {
   user_id Uuid
   user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  category_id Int?
-  category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  category_id Int
+  category Category @relation(fields: [category_id], references: [id], onDelete: Restrict)
 
   created_at TimestamptzString @default(now()) 
 
@@ -55,18 +57,19 @@ model ExpenseLog {
   @@index([user_id, created_at])
   @@index([category_id])
   @@map("expense_log") // @@map is built inside prisma that works like  "AS" in SQL when making nickanmes for fields or attributes
+  @@rls
 }
 
 model ExpenseHistory {
   id     Int  @id @default(autoincrement())
-  log_id Int
+  log_id Int @unique
   log    ExpenseLog @relation(fields: [log_id], references: [id], onDelete: Cascade)
 
   duration   DURATION @default(DAILY)
   created_at TimestamptzString @default(now())
 
-  @@index([log_id])
   @@map("expense_history")
+  @@rls
 }
 
 model Category {
@@ -74,4 +77,127 @@ model Category {
   name String @unique
 
   @@map("category")
+  @@rls
+}
+
+// ---------------------------------------------------------------------------
+// Row Level Security policies
+//
+// Every policy is scoped to the `authenticated` role, and ownership is derived
+// from the authenticated user's id: `auth.uid()`. `service_role` bypasses RLS
+// by design; `anon` gets no access because no policy grants it.
+// ---------------------------------------------------------------------------
+
+// user: a user may only touch their own row (User.id == auth.uid()).
+policy_select user_owner_read {
+  target = User
+  roles  = [authenticated]
+  using  = sql`"id"::uuid = auth.uid()`
+}
+
+policy_insert user_owner_create {
+  target    = User
+  roles     = [authenticated]
+  withCheck = sql`"id"::uuid = auth.uid()`
+}
+
+policy_update user_owner_update {
+  target    = User
+  roles     = [authenticated]
+  using     = sql`"id"::uuid = auth.uid()`
+  withCheck = sql`"id"::uuid = auth.uid()`
+}
+
+policy_delete user_owner_delete {
+  target = User
+  roles  = [authenticated]
+  using  = sql`"id"::uuid = auth.uid()`
+}
+
+// profile: ownership is via user_id == auth.uid().
+policy_select profile_owner_read {
+  target = Profile
+  roles  = [authenticated]
+  using  = sql`"user_id"::uuid = auth.uid()`
+}
+
+policy_insert profile_owner_create {
+  target    = Profile
+  roles     = [authenticated]
+  withCheck = sql`"user_id"::uuid = auth.uid()`
+}
+
+policy_update profile_owner_update {
+  target    = Profile
+  roles     = [authenticated]
+  using     = sql`"user_id"::uuid = auth.uid()`
+  withCheck = sql`"user_id"::uuid = auth.uid()`
+}
+
+policy_delete profile_owner_delete {
+  target = Profile
+  roles  = [authenticated]
+  using  = sql`"user_id"::uuid = auth.uid()`
+}
+
+// expense_log: ownership is via user_id == auth.uid().
+policy_select expense_log_owner_read {
+  target = ExpenseLog
+  roles  = [authenticated]
+  using  = sql`"user_id"::uuid = auth.uid()`
+}
+
+policy_insert expense_log_owner_create {
+  target    = ExpenseLog
+  roles     = [authenticated]
+  withCheck = sql`"user_id"::uuid = auth.uid()`
+}
+
+policy_update expense_log_owner_update {
+  target    = ExpenseLog
+  roles     = [authenticated]
+  using     = sql`"user_id"::uuid = auth.uid()`
+  withCheck = sql`"user_id"::uuid = auth.uid()`
+}
+
+policy_delete expense_log_owner_delete {
+  target = ExpenseLog
+  roles  = [authenticated]
+  using  = sql`"user_id"::uuid = auth.uid()`
+}
+
+// expense_history: no user_id of its own, so ownership is inherited from the
+// parent log. A row is visible/writable only if its log belongs to the caller.
+policy_select expense_history_owner_read {
+  target = ExpenseHistory
+  roles  = [authenticated]
+  using  = sql`exists (select 1 from public.expense_log l where l.id = "expense_history"."log_id" and l.user_id = auth.uid())`
+}
+
+policy_insert expense_history_owner_create {
+  target    = ExpenseHistory
+  roles     = [authenticated]
+  withCheck = sql`exists (select 1 from public.expense_log l where l.id = "expense_history"."log_id" and l.user_id = auth.uid())`
+}
+
+policy_update expense_history_owner_update {
+  target    = ExpenseHistory
+  roles     = [authenticated]
+  using     = sql`exists (select 1 from public.expense_log l where l.id = "expense_history"."log_id" and l.user_id = auth.uid())`
+  withCheck = sql`exists (select 1 from public.expense_log l where l.id = "expense_history"."log_id" and l.user_id = auth.uid())`
+}
+
+policy_delete expense_history_owner_delete {
+  target = ExpenseHistory
+  roles  = [authenticated]
+  using  = sql`exists (select 1 from public.expense_log l where l.id = "expense_history"."log_id" and l.user_id = auth.uid())`
+}
+
+// category: global reference data. Every signed-in user may read it, but only
+// service_role (backend) may write, because no insert/update/delete policy is
+// defined for `authenticated`.
+policy_select category_read_all {
+  target = Category
+  roles  = [authenticated]
+  using  = sql`true`
 }

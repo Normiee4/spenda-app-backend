@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'8b566a247d85a427736bf3546193fffb771463094e9d09bf5ed5c20bff5bb282'>;
+  StorageHashBase<'556c6aad3bad930bf8b908e5a933f0d83ec36a8abe0eb871d93b185f4493f154'>;
 export type ExecutionHash =
   ExecutionHashBase<'9f46e78d39ad1749413586c162f08e6881960841bb59ee91b21b94a41fdc943e'>;
 export type ProfileHash =
@@ -343,7 +343,7 @@ export namespace Models {
     note: FieldOutputTypes['public']['ExpenseLog']['note'];
     raw_input: FieldOutputTypes['public']['ExpenseLog']['raw_input'];
     user_id: FieldOutputTypes['public']['ExpenseLog']['user_id'];
-    category: public_Category | null;
+    category: public_Category;
     user: public_User;
     readonly [RelationKeys]?: 'category' | 'user';
   };
@@ -459,15 +459,8 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
-              indexes: readonly [
-                {
-                  readonly name: 'expense_history_log_id_idx_3df9b500';
-                  readonly prefix: 'expense_history_log_id_idx';
-                  readonly columns: readonly ['log_id'];
-                  readonly unique: false;
-                },
-              ];
+              uniques: readonly [{ readonly columns: readonly ['log_id'] }];
+              indexes: readonly [];
               foreignKeys: readonly [
                 {
                   readonly source: {
@@ -494,7 +487,7 @@ type ContractBase = Omit<
                 readonly category_id: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                   readonly many: false;
                 };
                 readonly created_at: {
@@ -835,7 +828,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/numeric@1' };
               };
               readonly category_id: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
               readonly created_at: {
@@ -869,7 +862,7 @@ type ContractBase = Omit<
                   readonly model: 'Category';
                 };
                 readonly cardinality: 'N:1';
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly on: {
                   readonly localFields: readonly ['category_id'];
                   readonly targetFields: readonly ['id'];
