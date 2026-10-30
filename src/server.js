@@ -2,45 +2,41 @@ import { createServer } from 'http';
 
 import app from './app.js';
 import { port, nodeEnv } from './config/env.js';
-import { closePool } from './config/db.js';
-import { info, error } from './utils/logger.js';
 
-const server = createServer(app);
+function health(req, res) {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(
+    JSON.stringify({
+      success: true,
+      status: 'ok',
+      service: 'spenda-backend',
+      environment: nodeEnv,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    }),
+  );
+}
 
-server.listen(port, () => {
-  info(`Server listening on http://localhost:${port} (${nodeEnv})`);
+const server = createServer((req, res) => {
+  if (req.method === 'GET' && req.url === '/health') return health(req, res);
+  return app(req, res);
 });
 
-async function shutdown(signal) {
-  info(`${signal} received, shutting down gracefully...`);
+server.listen(port, () => {
+  console.log(`Server listening on http://localhost:${port} (${nodeEnv})`);
+});
 
-  server.close(async () => {
-    try {
-      await closePool();
-      info('HTTP server and database pool closed');
-      process.exit(0);
-    } catch (err) {
-      error('Error during shutdown', err);
-      process.exit(1);
-    }
+function shutdown(signal) {
+  console.log(`${signal} received, shutting down gracefully...`);
+
+  server.close(() => {
+    process.exit(0);
   });
 
-  setTimeout(() => {
-    error('Forced shutdown after timeout');
-    process.exit(1);
-  }, 10000).unref();
+  setTimeout(() => process.exit(1), 10000).unref();
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-process.on('unhandledRejection', (reason) => {
-  error('Unhandled rejection', reason instanceof Error ? reason : { reason });
-});
-
-process.on('uncaughtException', (err) => {
-  error('Uncaught exception', err);
-  shutdown('uncaughtException');
-});
 
 export default server;

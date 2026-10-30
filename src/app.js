@@ -5,11 +5,6 @@ import morgan from 'morgan';
 import compression from 'compression';
 
 import { corsOrigin, nodeEnv } from './config/env.js';
-import { healthCheck } from './config/db.js';
-import routes from './index.js';
-import { apiLimiter } from './middlewares/rateLimiter.js';
-import notFound from './middlewares/notFound.js';
-import errorHandler from './middlewares/errorHandler.js';
 
 const app = express();
 
@@ -30,28 +25,20 @@ if (nodeEnv !== 'test') {
   app.use(morgan(nodeEnv === 'production' ? 'combined' : 'dev'));
 }
 
-app.use('/api', apiLimiter);
+// Mount routes here.
 
-app.get('/health', async (req, res) => {
-  const database = await healthCheck();
-  res.status(200).json({
-    success: true,
-    status: 'ok',
-    service: 'spenda-backend',
-    environment: nodeEnv,
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    database,
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
+});
+
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: statusCode < 500 ? err.message : 'Internal server error',
   });
 });
-
-app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Spenda API', docs: '/api', health: '/health' });
-});
-
-app.use('/api', routes);
-
-app.use(notFound);
-app.use(errorHandler);
 
 export default app;
