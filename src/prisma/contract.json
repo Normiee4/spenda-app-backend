@@ -472,33 +472,6 @@
     "namespaces": {
       "public": {
         "entries": {
-          "rls": {
-            "category": {
-              "kind": "rls",
-              "namespaceId": "public",
-              "tableName": "category"
-            },
-            "expense_history": {
-              "kind": "rls",
-              "namespaceId": "public",
-              "tableName": "expense_history"
-            },
-            "expense_log": {
-              "kind": "rls",
-              "namespaceId": "public",
-              "tableName": "expense_log"
-            },
-            "profile": {
-              "kind": "rls",
-              "namespaceId": "public",
-              "tableName": "profile"
-            },
-            "user": {
-              "kind": "rls",
-              "namespaceId": "public",
-              "tableName": "user"
-            }
-          },
           "table": {
             "category": {
               "columns": {
@@ -941,7 +914,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "6cb7f1fcdafe8e70615dbda472702537f01b7ab884e915925153c4dab7bf49df"
+    "storageHash": "8b566a247d85a427736bf3546193fffb771463094e9d09bf5ed5c20bff5bb282"
   },
   "execution": {
     "executionHash": "9f46e78d39ad1749413586c162f08e6881960841bb59ee91b21b94a41fdc943e",
