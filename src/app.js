@@ -5,10 +5,15 @@ import morgan from 'morgan';
 import compression from 'compression';
 
 import { corsOrigin, nodeEnv } from './config/env.js';
+import globalError from './middlewares/error-handler.js';
+import apiRateLimiter from './middlewares/rate-limiter.js';
 
 const app = express();
 
 app.disable('x-powered-by');
+
+// Needed behind a proxy (Supabase/Render/etc.) so req.ip is the real client.
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(
@@ -18,12 +23,16 @@ app.use(
   }),
 );
 app.use(compression());
-app.use(json({ limit: '1mb' }));
-app.use(urlencoded({ extended: true, limit: '1mb' }));
 
 if (nodeEnv !== 'test') {
   app.use(morgan(nodeEnv === 'production' ? 'combined' : 'dev'));
 }
+
+// Rate limit before body parsing so rejected requests are cheap.
+app.use(apiRateLimiter());
+
+app.use(json({ limit: '1mb' }));
+app.use(urlencoded({ extended: true, limit: '1mb' }));
 
 // Mount routes here.
 
@@ -31,14 +40,6 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
 });
 
-app.use((err, req, res, next) => {
-  if (res.headersSent) return next(err);
-
-  const statusCode = err.statusCode || err.status || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: statusCode < 500 ? err.message : 'Internal server error',
-  });
-});
+app.use(globalError);
 
 export default app;
