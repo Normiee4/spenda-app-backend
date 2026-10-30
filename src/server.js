@@ -18,8 +18,14 @@ function health(req, res) {
 }
 
 const server = createServer((req, res) => {
-  if (req.method === 'GET' && req.url === '/health') return health(req, res);
+  const pathname = req.url.split('?')[0];
+  if (req.method === 'GET' && pathname === '/health') return health(req, res);
   return app(req, res);
+});
+
+server.on('error', (err) => {
+  console.error('Server error:', err.message);
+  process.exit(1);
 });
 
 server.listen(port, () => {
@@ -32,6 +38,8 @@ function shutdown(signal) {
   server.close(() => {
     process.exit(0);
   });
+
+  server.closeIdleConnections?.();
 
   setTimeout(() => process.exit(1), 10000).unref();
 }
