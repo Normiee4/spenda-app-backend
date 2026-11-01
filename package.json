@@ -9,6 +9,9 @@
     "start": "node src/server.js",
     "db:schema": "psql $DATABASE_URL -f db/schema.sql",
     "contract:emit": "prisma contract emit",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
+    "test:coverage": "node --test --experimental-test-coverage",
     "postinstall": "prisma skills sync || exit 0"
   },
   "keywords": [],
@@ -36,6 +39,7 @@
     "@types/node": "^26.6.5",
     "nodemon": "^3.1.14",
     "prisma": "^8.0.0-rc.28",
+    "supertest": "^7.3.1",
     "typescript": "^5.9.3"
   }
 }
