@@ -1,20 +1,9 @@
-import user from "./auth.model";
-
-
-// Login
-export const login = async (req, res, next) => {
-    try {
-
-        const {email.}
-
-
-    } catch {
-        (  )
-    }
+// Auth is verified by Supabase and the `requireAuth` middleware. The service
+// only exposes the already-verified claims; it has no database dependency.
+export function getMe({ auth }) {
+  return {
+    id: auth.sub,
+    email: auth.email,
+    role: auth.role ?? 'authenticated',
+  };
 }
-
-
-// Signup
-
-
-// Logout

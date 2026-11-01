@@ -7,6 +7,7 @@ import compression from 'compression';
 import { corsOrigin, nodeEnv } from './config/env.js';
 import globalError from './middlewares/error-handler.js';
 import apiRateLimiter from './middlewares/rate-limiter.js';
+import authRouter from './modules/auth/auth.route.js';
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use(json({ limit: '1mb' }));
 app.use(urlencoded({ extended: true, limit: '1mb' }));
 
 // Mount routes here.
+app.use('/api/v1/auth', authRouter);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
